@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>春茶的超级终端 v7.0 (真·最终版) 🐾</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* === 基础重置 === */
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* === 手机外壳容器 (图片覆盖版) === */
+        .phone-frame {
+            width: 408px; /* 保持尺寸适配图片 */
+            height: 880px;
+            background: transparent; /* 移除背景，由图片提供 */
+            border-radius: 0; /* 移除圆角，由图片提供 */
+            padding: 0; /* 移除内边距 */
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: none; /* 移除阴影 */
+            filter: drop-shadow(0 30px 50px rgba(0,0,0,0.3)); /* 给整张图加投影 */
+        }
+
+        /* 手机壳覆盖层 - 真实质感来源 */
+        .phone-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9000; /* 极高层级，盖住屏幕 */
+            pointer-events: none; /* 允许点击穿透到屏幕 */
+            background: url('https://cdn.jsdelivr.net/gh/yyk9137/st-phone-ui@main/Asset/phone-frame.png') no-repeat center/contain;
+            image-rendering: crisp-edges; /* 保持PNG锐利度 */
+        }
+
+        /* === 侧边物理按钮 (隐藏，因为图片里可能自带，或者被图片盖住) === */
+        .side-button { display: none; }
+
+        @media (max-width: 640px) {
+            .phone-frame {
+                width: 100vw; height: 100vh; filter: none;
+            }
+            .phone-overlay { display: none; } /* 移动端隐藏外壳图片 */
+            .screen {
+                width: 100% !important; height: 100% !important; border-radius: 0 !important;
+            }
+            .notch { display: none; }
+        }
+
+        /* === 硬件元素 === */
+        /* 灵动岛容器 - 完全透明，PNG已包含 */
+        .notch {
+            display: none; /* 完全隐藏，因为PNG图片已经有灵动岛了 */
+        }
+
+        /* 摄像头 - 隐藏，PNG图片已包含 */
+        .camera {
+            display: none;
+        }
+        
+        /* 听筒 - 隐藏，PNG图片已包含 */
+        .speaker {
+            display: none;
+        }
+
+        /* 状态栏 - 适配图片布局 */
+        .status-bar {
+            height: 54px;
+            width: 100%;
+            display: block;
+            padding: 0;
+            z-index: 10000; /* 确保在所有内容之上 */
+            position: absolute;
+            top: 0;
+            pointer-events: none;
+            color: #fff;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+
+        /* === 屏幕区域 === */
+        .screen {
+            width: 90%; /* 缩小宽度防止溢出 */
+            height: 93.5%; /* 进一步缩小高度，确保顶部底部完全不溢出 */
+            background: #000;
+            border-radius: 54px; /* 调整圆角 */
+            position: relative;
+            overflow: hidden;
+            /* 移除阴影和边框，因为有图片覆盖 */
+            box-shadow: none; 
+            border: none;
+            z-index: 1; /* 最底层 */
+        }
+        
+        /* 时间 - 光学居中修正 */
+        #clock {
+            position: absolute;
+            left: 35px; /* 增加左边距，让时间更靠近中心 */
+            top: 52px; /* 精确匹配Figma设计的垂直位置 */
+            width: calc(50% - 100px); /* 缩小宽度，留出更多空间给灵动岛 */
+            height: 40px;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+            /* 强制居中 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5); /* 增加文字阴影防止背景过白看不清 */
+        }
+
+        /* 状态栏图标 - 光学居中修正 */
+        .status-icons {
+            position: absolute;
+            right: 35px; /* 增加右边距，让图标更靠近中心 */
+            top: 52px; /* 精确匹配Figma设计的垂直位置 */
+            width: calc(50% - 100px); /* 缩小宽度，留出更多空间给灵动岛 */
+            height: 40px;
+            /* 强制居中 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            color: white; /* 默认白色 */
+        }
+
+        /* Light模式（主界面）- 白色图标带阴影 */
+        .status-bar.light .status-icons {
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); /* 增加图标阴影 */
+            color: white;
+        }
+        
+        .status-icons svg {
+            height: 12px;
+            width: auto;
+            display: block;
+            opacity: 1;
+            shape-rendering: crispEdges; /* 确保SVG边缘清晰 */
+            -webkit-backface-visibility: hidden; /* 防止模糊 */
+            backface-visibility: hidden; /* 标准属性 */
+            transform: translateZ(0); /* 启用硬件加速 */
+        }
+
+        /* 状态栏dark模式 - 用于Airbnb和设置等浅色背景应用 */
+        .status-bar.dark #clock {
+            color: #000;
+            text-shadow: none;
+            font-weight: 600;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Dark模式（应用内）- 黑色图标无阴影 */
+        .status-bar.dark .status-icons {
+            filter: none; /* 移除阴影以保持清晰 */
+            color: #000; /* 黑色图标 */
+        }
+
+        .app-view {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #fff;
+            transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100; display: flex; flex-direction: column;
+        }
+        .app-view.active { transform: translateX(0); }
+        .app-view.sub-page { z-index: 200; }
+
+        /* === 主屏幕 (真·二次元壁纸) === */
+        .home-screen {
+            height: 100%; 
+            padding: 85px 20px 134px; /* 调整padding：增加顶部间距，底部为dock留出空间(90px dock + 34px bottom + 10px 间距) */
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            /* 使用 Anime Scenery 壁纸 */
+            background: url('https://c4.wallpaperflare.com/wallpaper/297/22/531/anime-scenery-landscape-sky-clouds-wallpaper-preview.jpg') center/cover no-repeat;
+            position: relative;
+        }
+        
+        /* Widget区域 - 横向布局 */
+        .widgets-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 0 12px;
+        }
+        
+        /* App图标网格区域 */
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-auto-rows: max-content;
+            gap: 24px 16px;
+            flex: 1;
+        }
+        /* 遮罩让图标更清晰 */
+        .home-screen::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.05) 60%, rgba(0,0,0,0.2));
+            pointer-events: none;
+        }
+
+        .app-icon-container { 
+            position: relative; display: flex; flex-direction: column; align-items: center; 
+            gap: 8px; cursor: pointer; z-index: 10; transition: transform 0.1s; 
+        }
+        .app-icon-container:active { transform: scale(0.95); opacity: 0.9; }
+        
+        .app-icon {
+            width: 60px; height: 60px; border-radius: 14px; 
+            display: flex; justify-content: center; align-items: center; 
+            color: white; font-size: 28px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            /* 磨砂玻璃 */
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.4);
+        }
+        
+        .app-name { font-size: 12px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); font-weight: 500; margin-top: 2px; }
+
+        /* === 天气Widget样式 (iOS 18风格) === */
+        .weather-widget-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .weather-widget {
+            width: 158px;
+            height: 158px;
+            background: linear-gradient(180deg, #074a8e 0%, #5596d8 100%);
+            border-radius: 22px;
+            padding: 18px 16px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .weather-current {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+        }
+
+        .weather-city-temp {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .weather-city {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .city-name {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: white;
+            line-height: 0.79;
+        }
+
+        .weather-temp {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            font-size: 33px;
+            font-weight: 400;
+            color: white;
+            line-height: 0.76;
+        }
+
+        .weather-summary {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            padding-top: 1px;
+        }
+
+        .weather-icon-sun {
+            flex-shrink: 0;
+        }
+
+        .weather-details {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            line-height: 0.79;
+            text-align: right;
+        }
+
+        .weather-forecast {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+        }
+
+        .forecast-left {
+            display: flex;
+            gap: 6px;
+        }
+
+        .forecast-days {
+            display: flex;
+            flex-direction: column;
+            gap: 12.5px;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            line-height: 0.79;
+            width: 24px;
+            padding-top: 3px;
+        }
+
+        .forecast-icons {
+            display: flex;
+            flex-direction: column;
+            gap: 5.5px;
+        }
+
+        .forecast-icons svg {
+            width: 25px;
+            height: 16px;
+        }
+
+        .forecast-right {
+            display: flex;
+            gap: 2px;
+        }
+
+        .forecast-low-temps {
+            display: flex;
+            flex-direction: column;
+            gap: 11.5px;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            opacity: 0.7;
+            line-height: 0.79;
+            width: 16px;
+            text-align: center;
+            padding-top: 3px;
+        }
+
+        .forecast-high-temps {
+            display: flex;
+            flex-direction: column;
+            gap: 11.5px;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            line-height: 0.79;
+            width: 24px;
+            text-align: center;
+            padding-top: 3px;
+        }
+
+        .weather-label {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            color: white;
+            line-height: 16px;
+            text-align: center;
+        }
+
+        /* === 相册Widget样式 (iOS 18风格) === */
+        .photos-widget-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .photos-widget {
+            width: 158px;
+            height: 158px;
+            border-radius: 22px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .photos-bg-image {
+            position: absolute;
+            top: -6.54%;
+            left: 0;
+            width: 100%;
+            height: 133.33%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .photos-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%);
+        }
+
+        .photos-title {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro", sans-serif;
+            font-size: 23px;
+            font-weight: 700;
+            color: white;
+            line-height: 16px;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+            /* 模拟压缩字体效果 */
+            transform: scaleX(0.7);
+            transform-origin: left;
+            width: calc(100% / 0.7); /* 补偿transform造成的宽度压缩 */
+        }
+
+        .photos-date {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro", sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            color: white;
+            line-height: 16px;
+            /* 模拟扩展字体效果 */
+            letter-spacing: 0.5px;
+        }
+
+        .photos-label {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            color: white;
+            line-height: 16px;
+            text-align: center;
+        }
+
+        /* === 日历Widget样式 (iOS 18风格 - 横向长条) === */
+        .calendar-widget-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            width: 100%;
+            padding: 0 12px;
+        }
+
+        .calendar-widget {
+            width: 338px;
+            height: 158px;
+            background: white;
+            border-radius: 22px;
+            padding: 16px 16px 16px 15px;
+            display: flex;
+            gap: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        /* 左列 - 今天 */
+        .calendar-left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 17px;
+            width: 145px;
+            flex-shrink: 0;
+        }
+
+        .calendar-today-header {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-top: 2px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .calendar-day-name {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            color: #FD3B31;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+
+        .calendar-date-number {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            font-size: 32px;
+            font-weight: 300;
+            color: #000000;
+            line-height: 1;
+            margin-top: 0;
+        }
+
+        /* 事件容器 */
+        .calendar-events-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding-left: 1px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        /* 事件卡片 */
+        .calendar-event {
+            display: flex;
+            align-items: center;
+            height: 32px;
+            border-radius: 4px;
+            padding: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .calendar-event-large {
+            height: 50px;
+        }
+        
+        .calendar-event-large .calendar-event-details {
+            padding: 6px 3px 3px 3px;
+        }
+
+        /* 事件指示器 */
+        .calendar-event-indicator {
+            width: 2px;
+            height: 28px;
+            border-radius: 20px;
+            flex-shrink: 0;
+            margin-left: 2px;
+        }
+
+        .calendar-indicator-large {
+            height: 46px;
+        }
+
+        /* 事件详情 */
+        .calendar-event-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            padding: 4.5px 3px 3px 3px;
+            justify-content: flex-start;
+            overflow: hidden;
+            min-width: 0;
+        }
+
+        .calendar-event-title {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .calendar-event-location {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .calendar-event-time {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        /* 黄色事件 */
+        .calendar-event-yellow {
+            background: #FEF7EC;
+        }
+        .calendar-event-yellow .calendar-event-details {
+            background: #FEF7EC;
+        }
+        .calendar-event-yellow .calendar-event-title {
+            color: #73531E;
+        }
+        .calendar-event-yellow .calendar-event-time {
+            color: #B79E70;
+        }
+        .calendar-indicator-yellow {
+            background: #F4B855;
+        }
+
+        /* 绿色事件 */
+        .calendar-event-green {
+            background: #E9F8E0;
+        }
+        .calendar-event-green .calendar-event-details {
+            background: #E9F8E0;
+        }
+        .calendar-event-green .calendar-event-title {
+            color: #2D6A1B;
+        }
+        .calendar-event-green .calendar-event-time {
+            color: #89B96C;
+        }
+        .calendar-indicator-green {
+            background: #82D754;
+        }
+
+        /* 红色事件 */
+        .calendar-event-red {
+            background: #FCEFF2;
+        }
+        .calendar-event-red .calendar-event-details {
+            background: #FCEFF2;
+        }
+        .calendar-event-red .calendar-event-title,
+        .calendar-event-red .calendar-event-location {
+            color: #75140C;
+        }
+        .calendar-event-red .calendar-event-time {
+            color: #975C66;
+        }
+        .calendar-indicator-red {
+            background: #EB445A;
+        }
+
+        /* 蓝色指示器 */
+        .calendar-indicator-blue {
+            background: #4FA7F5;
+        }
+
+        /* 紫色指示器 */
+        .calendar-indicator-purple {
+            background: #BE75D7;
+        }
+
+        /* 右列 - 明天 */
+        .calendar-right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 146px;
+            flex-shrink: 0;
+        }
+        
+        .calendar-right-column .calendar-events-container {
+            padding-left: 0;
+            gap: 3px;
+        }
+
+        .calendar-tomorrow-header {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-top: 2px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .calendar-secondary-header {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            color: #A7A7AA;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+
+        /* 生日事件 */
+        .calendar-birthday-event {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #F2F3F7;
+            border-radius: 100px;
+            padding: 2px 8px 2px 2px;
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .calendar-birthday-icon {
+            position: relative;
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .calendar-birthday-icon::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 100px;
+        }
+
+        .calendar-birthday-icon svg {
+            position: relative;
+            z-index: 1;
+        }
+
+        .calendar-birthday-text {
+            flex: 1;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            color: #414B57;
+            line-height: 1;
+            text-transform: capitalize;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        /* 更多事件 */
+        .calendar-more-events {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding-left: 2px;
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .calendar-indicators-group {
+            display: flex;
+            gap: 3px;
+            flex-shrink: 0;
+        }
+
+        .calendar-mini-indicator {
+            width: 2px;
+            height: 15px;
+            border-radius: 20px;
+        }
+
+        .calendar-more-text {
+            flex: 1;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            color: #9B9B9E;
+            line-height: 1;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .calendar-label {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            color: white;
+            line-height: 16px;
+            text-align: center;
+        }
+
+        /* === Dock样式 (iOS经典毛玻璃Dock) === */
+        .dock {
+            position: absolute;
+            bottom: 34px;  /* 提高位置，确保在手机屏幕圆角内 */
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 32px);
+            max-width: 340px;
+            height: 90px;
+            /* 超级柔和的毛玻璃效果 - 几乎看不到边缘 */
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(50px) saturate(200%) brightness(1.05);
+            -webkit-backdrop-filter: blur(50px) saturate(200%) brightness(1.05);
+            border-radius: 26px;
+            padding: 8px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            gap: 8px;
+            /* 极其柔和的阴影，几乎不可见的边缘 */
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06), 
+                        0 2px 6px rgba(0, 0, 0, 0.03),
+                        inset 0 0 0 0.5px rgba(255, 255, 255, 0.2);
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        /* Dock隐藏状态 */
+        .dock.hidden {
+            transform: translateX(-50%) translateY(130px);
+        }
+
+        /* Dock图标容器 */
+        .dock-icon-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .dock-icon-container:active {
+            transform: scale(0.92);
+        }
+
+        /* Dock图标 */
+        .dock-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 13.8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: transform 0.2s;
+        }
+
+        /* 特定应用图标样式 */
+        .dock-icon.phone {
+            background: linear-gradient(135deg, #4cd964 0%, #5de24e 100%);
+            color: white;
+        }
+
+        /* Love图标 - 白色底容器 */
+        .dock-icon.love {
+            background: #FFFFFF;
+            border-radius: 13.8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Love SVG特殊处理 - 放大到97.5%（65% × 1.5倍） */
+        .dock-icon.love .dock-icon-svg {
+            width: 97.5%;
+            height: 97.5%;
+        }
+
+        .dock-icon.safari {
+            background: linear-gradient(135deg, #0a84ff 0%, #1f8eff 100%);
+            color: white;
+        }
+
+        .dock-icon.messages {
+            background: linear-gradient(135deg, #0bbe6c 0%, #24d17e 100%);
+            color: white;
+        }
+
+        /* iOS风格统一图标容器 - SVG版本 */
+        .dock-icon.airbnb,
+        .dock-icon.journal,
+        .dock-icon.settings {
+            background: none;
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Airbnb和Settings图标 - SVG自带背景和阴影，直接显示 */
+        .dock-icon.airbnb,
+        .dock-icon.settings {
+            box-shadow: none; /* SVG已包含阴影效果 */
+        }
+
+        /* Journal黑色背景容器 */
+        .dock-icon.journal {
+            background: #1C1C1E; /* iOS深色背景 */
+            border-radius: 13.8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* SVG图标统一样式 */
+        .dock-icon-svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Journal SVG特殊处理 - 缩小到70%以适配黑色背景 */
+        .dock-icon.journal .dock-icon-svg {
+            width: 70%;
+            height: 70%;
+        }
+
+        /* 图标图片 - PNG备用 */
+        .dock-icon-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 13.8px;
+            display: block;
+        }
+
+        /* 隐藏滚动条 */
+        ::-webkit-scrollbar { width: 0; }
+    </style>
+</head>
+<body>
+
+    <div class="phone-frame">
+        <!-- 侧边物理按钮 -->
+        <div class="side-button mute-switch"></div>
+        <div class="side-button volume-up"></div>
+        <div class="side-button volume-down"></div>
+        <div class="side-button power-button"></div>
+        
+        <!-- 刘海屏（Dynamic Island风格） -->
+        <div class="notch">
+            <div class="camera"></div>
+            <div class="speaker"></div>
+        </div>
+        
+        <!-- 状态栏 (iPhone真实设计) -->
+        <div class="status-bar light" id="status-bar">
+            <span id="clock">21:07</span>
+            <div></div> <!-- 灵动岛占位符 -->
+            <div class="status-icons" id="status-icons-container">
+                <!-- 使用Figma提供的完整SVG，只包含信号、WiFi和电池图标 -->
+                <svg width="88" height="14" viewBox="0 0 88 14" fill="none" xmlns="http://www.w3.org/2000/svg" id="status-icons-svg">
+                    <!-- 信号 (4竖条) -->
+                    <g>
+                        <path opacity="0.2" d="M19.511 14.4102H21.512C22.035 14.4102 22.383 14.0449 22.383 13.5054V11.7783C22.383 11.2388 22.035 10.8818 21.512 10.8818H19.511C18.988 10.8818 18.64 11.2388 18.64 11.7783V13.5054C18.64 14.0449 18.988 14.4102 19.511 14.4102Z" fill="currentColor"/>
+                        <path d="M19.515 14.4102H21.532C22.047 14.4102 22.395 14.0449 22.395 13.5054V0.9048C22.395 0.3652 22.047 0 21.532 0H19.515C19 0 18.644 0.3652 18.644 0.9048V13.5054C18.644 14.0449 19 14.4102 19.515 14.4102Z" fill="currentColor"/>
+                        <path opacity="0.2" d="M13.301 14.4102H15.302C15.825 14.4102 16.173 14.0449 16.173 13.5054V11.7783C16.173 11.2388 15.825 10.8818 15.302 10.8818H13.301C12.778 10.8818 12.43 11.2388 12.43 11.7783V13.5054C12.43 14.0449 12.778 14.4102 13.301 14.4102Z" fill="currentColor"/>
+                        <path d="M13.306 14.4107H15.307C15.821 14.4107 16.178 14.0454 16.178 13.5059V4.1841C16.178 3.6445 15.821 3.2793 15.307 3.2793H13.306C12.783 3.2793 12.435 3.6445 12.435 4.1841V13.5059C12.435 14.0454 12.783 14.4107 13.306 14.4107Z" fill="currentColor"/>
+                        <path opacity="0.2" d="M7.091 14.4102H9.092C9.615 14.4102 9.963 14.0449 9.963 13.5054V11.7783C9.963 11.2388 9.615 10.8818 9.092 10.8818H7.091C6.568 10.8818 6.22 11.2388 6.22 11.7783V13.5054C6.22 14.0449 6.568 14.4102 7.091 14.4102Z" fill="currentColor"/>
+                        <path d="M7.089 14.4097H9.09C9.613 14.4097 9.961 14.0444 9.961 13.5049V7.188C9.961 6.6484 9.613 6.2832 9.09 6.2832H7.089C6.566 6.2832 6.218 6.6484 6.218 7.188V13.5049C6.218 14.0444 6.566 14.4097 7.089 14.4097Z" fill="currentColor"/>
+                        <path opacity="0.2" d="M0.872 14.4102H2.872C3.395 14.4102 3.744 14.0449 3.744 13.5054V11.7783C3.744 11.2388 3.395 10.8818 2.872 10.8818H0.872C0.349 10.8818 0 11.2388 0 11.7783V13.5054C0 14.0449 0.349 14.4102 0.872 14.4102Z" fill="currentColor"/>
+                        <path d="M0.872 14.4102H2.872C3.395 14.4102 3.744 14.0449 3.744 13.5054V9.7783C3.744 9.2388 3.395 8.8818 2.872 8.8818H0.872C0.349 8.8818 0 9.2388 0 9.7783V13.5054C0 14.0449 0.349 14.4102 0.872 14.4102Z" fill="currentColor"/>
+                    </g>
+                    
+                    <!-- WiFi -->
+                    <g transform="translate(30, 0)">
+                        <path d="M11.5555 13.8037C11.7381 13.8037 11.8958 13.7207 12.2195 13.4053L14.2449 11.4629C14.3694 11.3384 14.4026 11.1557 14.2864 11.0063C13.7469 10.3091 12.7259 9.7031 11.5555 9.7031C10.3519 9.7031 9.33085 10.334 8.7913 11.0561C8.7083 11.189 8.7415 11.3384 8.87431 11.4629L10.8914 13.4053C11.2151 13.7124 11.3729 13.8037 11.5555 13.8037ZM6.69951 9.2881C6.88212 9.4624 7.10624 9.4375 7.27226 9.2549C8.26835 8.1509 9.89531 7.3457 11.5555 7.354C13.2322 7.3457 14.8592 8.1758 15.8719 9.2798C16.0213 9.4541 16.2288 9.4458 16.4114 9.2798L17.698 8.0015C17.8309 7.8687 17.8475 7.686 17.7229 7.5366C16.4695 6.001 14.1453 4.8472 11.5555 4.8472C8.96562 4.8472 6.6414 6.001 5.38798 7.5366C5.26347 7.686 5.27177 7.8521 5.41288 8.0015L6.69951 9.2881ZM3.25468 5.8184C3.4207 5.9761 3.65312 5.9761 3.81083 5.8101C5.85283 3.6436 8.54228 2.4981 11.5555 2.4981C14.5852 2.4981 17.2913 3.6519 19.3167 5.8184C19.4661 5.9678 19.6902 5.9595 19.8562 5.8018L21.0018 4.6563C21.1512 4.5068 21.1429 4.3242 21.0267 4.1831C19.076 1.7759 15.407 0.0078 11.5555 0.0078C7.7122 0.0078 4.02665 1.7759 2.08427 4.1831C1.96806 4.3242 1.96806 4.5068 2.10917 4.6563L3.25468 5.8184Z" fill="currentColor"/>
+                    </g>
+                    
+                    <!-- 电池 -->
+                    <g transform="translate(57, 0)">
+                        <path opacity="0.4" d="M5.522 13.9548H22.203C24.149 13.9548 25.54 13.7363 26.532 12.7438C27.528 11.7513 27.733 10.3858 27.733 8.4323V5.5391C27.733 3.5856 27.528 2.2134 26.532 1.2242C25.537 0.2318 24.149 0.0166 22.203 0.0166H5.461C3.59 0.0166 2.196 0.2351 1.204 1.2309C0.208 2.2234 0 3.5997 0 5.4702V8.4323C0 10.3858 0.204 11.7546 1.197 12.7438C2.196 13.7363 3.58 13.9548 5.522 13.9548ZM5.239 12.6249C3.973 12.6249 2.833 12.4245 2.171 11.77C1.519 11.1081 1.33 9.9852 1.33 8.7156V5.3138C1.33 3.9927 1.519 2.8566 2.167 2.1947C2.829 1.5294 3.987 1.3432 5.305 1.3432H22.493C23.76 1.3432 24.9 1.5468 25.551 2.198C26.213 2.86 26.403 3.9753 26.403 5.2449V8.7156C26.403 9.9852 26.21 11.1081 25.551 11.77C24.9 12.4279 23.76 12.6249 22.493 12.6249H5.239ZM28.977 9.601C29.772 9.5506 30.848 8.5256 30.848 6.9819C30.848 5.4424 29.772 4.4174 28.977 4.367V9.601Z" fill="currentColor"/>
+                        <path d="M4.863 11.5222H22.881C23.844 11.5222 24.417 11.3715 24.781 11.0074C25.145 10.64 25.303 10.0638 25.303 9.0995V4.869C25.303 3.898 25.145 3.3284 24.785 2.961C24.417 2.6003 23.838 2.4463 22.881 2.4463H4.932C3.903 2.4463 3.309 2.597 2.959 2.9577C2.599 3.3251 2.44 3.9187 2.44 4.9304V9.0995C2.44 10.0738 2.599 10.64 2.959 11.0074C3.327 11.3681 3.906 11.5222 4.863 11.5222Z" fill="currentColor"/>
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <div class="screen">
+            <!-- 主屏幕 -->
+            <div class="home-screen" id="home-screen">
+                <!-- Widget横向布局区域 -->
+                <div class="widgets-row">
+                    <!-- 天气Widget -->
+                    <div class="weather-widget-container">
+                        <div class="weather-widget">
+                            <!-- 当前温度和摘要 -->
+                            <div class="weather-current">
+                                <!-- 城市和温度 -->
+                                <div class="weather-city-temp">
+                                    <div class="weather-city">
+                                        <span class="city-name">Tiburon</span>
+                                        <svg width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M4.5 0C2.85 0 1.5 1.35 1.5 3C1.5 5.25 4.5 9 4.5 9C4.5 9 7.5 5.25 7.5 3C7.5 1.35 6.15 0 4.5 0ZM4.5 4.125C3.87 4.125 3.375 3.63 3.375 3C3.375 2.37 3.87 1.875 4.5 1.875C5.13 1.875 5.625 2.37 5.625 3C5.625 3.63 5.13 4.125 4.5 4.125Z" fill="white"/>
+                                        </svg>
+                                    </div>
+                                    <div class="weather-temp">65°</div>
+                                </div>
+                                <!-- 摘要和指标 -->
+                                <div class="weather-summary">
+                                    <svg class="weather-icon-sun" width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M6.5 2C4.29 2 2.5 3.79 2.5 6C2.5 8.21 4.29 10 6.5 10C8.71 10 10.5 8.21 10.5 6C10.5 3.79 8.71 2 6.5 2ZM6.5 9C4.84 9 3.5 7.66 3.5 6C3.5 4.34 4.84 3 6.5 3C8.16 3 9.5 4.34 9.5 6C9.5 7.66 8.16 9 6.5 9ZM6.5 0C6.77 0 7 0.22 7 0.5V1.5C7 1.78 6.77 2 6.5 2C6.23 2 6 1.78 6 1.5V0.5C6 0.22 6.23 0 6.5 0ZM6.5 11C6.23 11 6 11.22 6 11.5V12.5C6 12.78 6.23 13 6.5 13C6.77 13 7 12.78 7 12.5V11.5C7 11.22 6.77 11 6.5 11ZM11.5 6C11.78 6 12 6.23 12 6.5C12 6.77 11.78 7 11.5 7H10.5C10.22 7 10 6.77 10 6.5C10 6.23 10.22 6 10.5 6H11.5ZM2.5 6H1.5C1.22 6 1 6.23 1 6.5C1 6.77 1.22 7 1.5 7H2.5C2.78 7 3 6.77 3 6.5C3 6.23 2.78 6 2.5 6Z" fill="#FFD409"/>
+                                    </svg>
+                                    <div class="weather-details">
+                                        <div class="weather-high">H:72°</div>
+                                        <div class="weather-low">L:55°</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 天气预报 -->
+                            <div class="weather-forecast">
+                                <div class="forecast-left">
+                                    <div class="forecast-days">
+                                        <div>Tue</div>
+                                        <div>Wed</div>
+                                        <div>Thu</div>
+                                        <div>Fri</div>
+                                    </div>
+                                    <div class="forecast-icons">
+                                        <svg width="25" height="16" viewBox="0 0 25 16" fill="none"><path d="M12.5 3C14.71 3 16.5 4.79 16.5 7C16.5 9.21 14.71 11 12.5 11C10.29 11 8.5 9.21 8.5 7C8.5 4.79 10.29 3 12.5 3Z" fill="white" opacity="0.7"/><path d="M18 11C19.1 11 20 10.1 20 9C20 7.9 19.1 7 18 7C16.9 7 16 7.9 16 9C16 10.1 16.9 11 18 11Z" fill="white"/></svg>
+                                        <svg width="25" height="16" viewBox="0 0 25 16" fill="none"><path d="M12.5 3C14.71 3 16.5 4.79 16.5 7C16.5 9.21 14.71 11 12.5 11C10.29 11 8.5 9.21 8.5 7C8.5 4.79 10.29 3 12.5 3Z" fill="white" opacity="0.7"/><path d="M18 11C19.1 11 20 10.1 20 9C20 7.9 19.1 7 18 7C16.9 7 16 7.9 16 9C16 10.1 16.9 11 18 11Z" fill="white"/></svg>
+                                        <svg width="25" height="16" viewBox="0 0 25 16" fill="none"><path d="M12.5 2C14.98 2 17 4.02 17 6.5C17 8.98 14.98 11 12.5 11C10.02 11 8 8.98 8 6.5C8 4.02 10.02 2 12.5 2Z" fill="#FFD409"/></svg>
+                                        <svg width="25" height="16" viewBox="0 0 25 16" fill="none"><path d="M12.5 2C14.98 2 17 4.02 17 6.5C17 8.98 14.98 11 12.5 11C10.02 11 8 8.98 8 6.5C8 4.02 10.02 2 12.5 2Z" fill="#FFD409"/></svg>
+                                    </div>
+                                </div>
+                                <div class="forecast-right">
+                                    <div class="forecast-low-temps">
+                                        <div>59</div>
+                                        <div>56</div>
+                                        <div>55</div>
+                                        <div>56</div>
+                                    </div>
+                                    <div class="forecast-high-temps">
+                                        <div>68°</div>
+                                        <div>69°</div>
+                                        <div>73°</div>
+                                        <div>74°</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="weather-label">Weather</div>
+                    </div>
+
+                    <!-- 相册Widget -->
+                    <div class="photos-widget-container">
+                        <div class="photos-widget">
+                            <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80" alt="Mountain landscape" class="photos-bg-image">
+                            <div class="photos-overlay">
+                                <div class="photos-title">ON THIS DAY</div>
+                                <div class="photos-date">June 7, 2023</div>
+                            </div>
+                        </div>
+                        <div class="photos-label">Photos</div>
+                    </div>
+                </div>
+
+                <!-- 日历Widget - 横向长条 -->
+                <div class="calendar-widget-container">
+                    <div class="calendar-widget">
+                        <!-- 左列：今天 -->
+                        <div class="calendar-left-column">
+                            <div class="calendar-today-header">
+                                <div class="calendar-day-name">MONDAY</div>
+                                <div class="calendar-date-number">7</div>
+                            </div>
+                            <div class="calendar-events-container">
+                                <!-- Farmers Market事件 -->
+                                <div class="calendar-event calendar-event-yellow">
+                                    <div class="calendar-event-indicator calendar-indicator-yellow"></div>
+                                    <div class="calendar-event-details">
+                                        <div class="calendar-event-title">Farmers Market</div>
+                                        <div class="calendar-event-time">9:45–11:00AM</div>
+                                    </div>
+                                </div>
+                                <!-- Weekly Prep事件 -->
+                                <div class="calendar-event calendar-event-green">
+                                    <div class="calendar-event-indicator calendar-indicator-green"></div>
+                                    <div class="calendar-event-details">
+                                        <div class="calendar-event-title">Weekly Prep</div>
+                                        <div class="calendar-event-time">11:15–1:00PM</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 右列：明天 -->
+                        <div class="calendar-right-column">
+                            <div class="calendar-tomorrow-header">
+                                <div class="calendar-secondary-header">TOMORROW</div>
+                                <!-- 生日事件 -->
+                                <div class="calendar-birthday-event">
+                                    <div class="calendar-birthday-icon">
+                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                            <path d="M10 2C9.45 2 9 2.45 9 3C9 3.55 9.45 4 10 4C10.55 4 11 3.55 11 3C11 2.45 10.55 2 10 2ZM10 5C8.34 5 7 6.34 7 8H13C13 6.34 11.66 5 10 5ZM16 9H4C3.45 9 3 9.45 3 10V17C3 17.55 3.45 18 4 18H16C16.55 18 17 17.55 17 17V10C17 9.45 16.55 9 16 9Z" fill="#8195AE"/>
+                                        </svg>
+                                    </div>
+                                    <div class="calendar-birthday-text">Ravi's Birthday</div>
+                                </div>
+                            </div>
+                            <div class="calendar-events-container">
+                                <!-- Morning Swim事件 -->
+                                <div class="calendar-event calendar-event-red calendar-event-large">
+                                    <div class="calendar-event-indicator calendar-indicator-red calendar-indicator-large"></div>
+                                    <div class="calendar-event-details">
+                                        <div class="calendar-event-title">Morning Swim</div>
+                                        <div class="calendar-event-location">Home</div>
+                                        <div class="calendar-event-time">9:00–9:45AM</div>
+                                    </div>
+                                </div>
+                                <!-- 更多事件指示器 -->
+                                <div class="calendar-more-events">
+                                    <div class="calendar-indicators-group">
+                                        <div class="calendar-mini-indicator calendar-indicator-green"></div>
+                                        <div class="calendar-mini-indicator calendar-indicator-blue"></div>
+                                        <div class="calendar-mini-indicator calendar-indicator-green"></div>
+                                        <div class="calendar-mini-indicator calendar-indicator-yellow"></div>
+                                        <div class="calendar-mini-indicator calendar-indicator-purple"></div>
+                                    </div>
+                                    <div class="calendar-more-text">5 more events</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="calendar-label">Calendar</div>
+                </div>
+
+                <!-- App图标网格区域 -->
+                <div class="apps-grid">
+                    <!-- 设置图标已移至dock -->
+                </div>
+
+                <!-- Dock - iOS经典毛玻璃底部栏 -->
+                <div class="dock">
+                    <div class="dock-icon-container">
+                        <div class="dock-icon love">
+                            <!-- 内嵌SVG版本 - 适合悬浮窗使用 -->
+                            <svg class="dock-icon-svg" viewBox="0 0 91 85" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M80.6371 10.3309L21.9619 0.155026C15.4992 -0.958401 9.22609 3.84766 7.95689 10.8947L0.224968 54.0646C-1.04424 61.0975 3.18643 67.7358 9.64916 68.8633L14.2446 69.6667L12.3189 80.956C12.0563 82.464 12.9608 83.8593 14.3467 84.0989C14.8865 84.1976 15.47 84.0989 15.9806 83.7889L34.333 73.1338L68.3243 79.0251C74.7871 80.1385 81.0602 75.3325 82.3294 68.2855L90.0613 25.1155C91.3305 18.0826 87.0998 11.4443 80.6371 10.3168V10.3309Z" fill="white"/>
+                                <path d="M46.1642 27.7089C46.0329 27.3847 49.6655 24.9605 50.0302 24.735C54.2755 22.1135 59.1626 21.8176 63.2766 23.9458C65.7275 25.1156 67.2885 27.8357 67.3176 30.9928C67.2593 36.3767 62.6201 41.4223 58.9438 44.3116C55.676 46.8767 52.1018 48.8076 48.9944 51.6405C46.6894 53.5291 44.6178 55.7982 42.8672 58.3633C42.4733 59.0821 41.9773 59.7304 41.3938 60.266C40.3288 61.0835 38.7095 60.0405 38.053 59.1385C37.1923 57.9546 37.1485 55.9814 36.6087 54.5579C36.0398 53.1204 35.3103 51.7955 34.4496 50.5975C30.8171 45.2559 23.9605 41.9156 24.5294 33.8116C24.7774 26.1585 28.7017 19.6894 35.7334 19.182C40.5185 18.8719 44.2531 23.1988 46.1496 27.723L46.1642 27.7089ZM41.277 51.9787C45.9892 44.7767 54.1733 42.9727 59.7024 36.9122C60.9716 35.5169 62.7222 33.2337 62.197 31.1337C61.6718 29.0055 59.0897 28.0753 57.3537 27.8921C54.7131 27.737 52.0434 28.7659 49.8989 30.7814C48.4109 32.0921 47.3605 33.8398 45.7703 35.0096C45.2306 35.4747 44.5595 35.6579 43.9468 35.4888C42.4587 35.1646 41.919 33.727 41.5834 32.1626C41.0728 30.2035 40.358 28.3431 39.4535 26.6236C37.6737 23.4384 33.9098 24.3545 31.6632 26.9619C29.3874 29.5975 28.6434 33.4592 29.7959 36.6586C30.394 38.0257 31.2255 39.2237 32.2467 40.1961C33.9974 41.9015 35.6605 43.7056 37.236 45.6223C38.0238 46.5948 38.7532 47.6378 39.4243 48.723C40.0808 49.7801 40.533 51.0063 41.277 51.9787Z" fill="#63777B"/>
+                            </svg>
+                            <!-- 如需外挂版本，取消注释下行 -->
+                            <!-- <img src="./Love.svg" alt="Love" class="dock-icon-svg"> -->
+                        </div>
+                    </div>
+                    <div class="dock-icon-container" onclick="openApp('airbnb')">
+                        <div class="dock-icon airbnb">
+                            <img src="https://cdn.jsdelivr.net/gh/yyk9137/st-phone-ui@main/Asset/Airbnb.svg" alt="Airbnb" class="dock-icon-svg">
+                        </div>
+                    </div>
+                    <div class="dock-icon-container">
+                        <div class="dock-icon journal">
+                            <img src="https://cdn.jsdelivr.net/gh/yyk9137/st-phone-ui@main/Asset/journal.svg" alt="Journal" class="dock-icon-svg">
+                        </div>
+                    </div>
+                    <div class="dock-icon-container" onclick="openApp('settings')">
+                        <div class="dock-icon settings">
+                            <img src="https://cdn.jsdelivr.net/gh/yyk9137/st-phone-ui@main/Asset/Settings.svg" alt="Settings" class="dock-icon-svg">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- === 设置 === -->
+            <div class="app-view" id="settings-app" style="background: #F2F2F7; overflow-y: auto; padding-bottom: 120px;">
+                <!-- 标题区 -->
+                <div style="padding-top: 60px; padding-bottom: 8px; padding-left: 20px; padding-right: 20px;">
+                    <h1 style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; font-size: 34px; font-weight: 700; line-height: 41px; margin: 0; color: #000;">设置</h1>
+                </div>
+                
+                <!-- 壁纸设置分组 -->
+                <div style="margin: 20px 0 35px;">
+                    <div style="background: white; border-radius: 10px; overflow: hidden; margin: 0 16px;">
+                        <!-- 桌面壁纸行 -->
+                        <div style="min-height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 0.33px solid #C7C7CC;">
+                            <div>
+                                <div style="font-family: -apple-system, 'SF Pro Text'; font-size: 17px; font-weight: 400; line-height: 22px; color: #000;">桌面壁纸</div>
+                                <div style="font-family: -apple-system, 'SF Pro Text'; font-size: 13px; font-weight: 400; line-height: 16px; color: #8E8E93; margin-top: 2px;">上传图片自定义手机背景</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 选择图片行 -->
+                        <div style="height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; cursor: pointer; border-bottom: 0.33px solid #C7C7CC;" onclick="document.getElementById('bg-upload').click()">
+                            <span style="font-family: -apple-system, 'SF Pro Text'; font-size: 17px; color: #000;">选择图片</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 32px; height: 32px; border-radius: 6px; background: #E5E5EA; background-size: cover; background-position: center;" id="current-bg-preview"></div>
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <path d="M5.17157 2L10.3431 7.17157L5.17157 12.3431" stroke="#C7C7CC" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <input type="file" id="bg-upload" accept="image/*" class="hidden" onchange="changeWallpaper(this)"/>
+                        </div>
+                        
+                        <!-- 恢复默认壁纸行 -->
+                        <div style="height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-bottom: 0.33px solid #C7C7CC;" onclick="resetWallpaper()">
+                            <span style="font-family: -apple-system, 'SF Pro Text'; font-size: 17px; color: #FF3B30;">恢复默认壁纸</span>
+                        </div>
+                        
+                        <!-- 返回桌面行 -->
+                        <div style="height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="goHome()">
+                            <span style="font-family: -apple-system, 'SF Pro Text'; font-size: 17px; color: #007AFF;">返回桌面</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 页脚信息 -->
+                <div style="text-align: center; padding: 20px; font-family: -apple-system, 'SF Pro Text'; font-size: 13px; color: #8E8E93;">
+                    SpringOS v7.0.1<br>
+                    Designed by Chuncha
+                </div>
+            </div>
+
+            <!-- === Airbnb === -->
+            <div class="app-view" id="airbnb-app" style="background: #F7F7F7; overflow: hidden; display: flex; flex-direction: column;">
+                <!-- 顶部栏 -->
+                <div style="background: white; border-bottom: 1px solid rgba(228, 233, 236, 0.3); flex-shrink: 0;">
+                    <div style="height: 44px;"></div>
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 0 20px; height: 56px; position: relative;">
+                        <!-- 标签居中 -->
+                        <div style="display: flex; gap: 16px;">
+                            <div style="border-bottom: 2px solid #0A0A0A; padding: 6px 0; font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 14px; font-weight: 500; line-height: 18px; color: #0A0A0A;">Stays</div>
+                            <div style="border-bottom: 1px solid #F7F7F7; padding: 6px 0; font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 14px; font-weight: 500; line-height: 18px; color: #989B9D;">Experiences</div>
+                        </div>
+                        <!-- 关闭按钮在右上角 -->
+                        <div onclick="goHome()" style="position: absolute; right: 20px; background: white; border: 1px solid #D8DCE0; border-radius: 24px; padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M12 4L4 12M4 4L12 12" stroke="#0A0A0A" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 内容区 -->
+                <div style="flex: 1; overflow: hidden; padding: 12px 24px; display: flex; flex-direction: column;">
+                    <!-- Where卡片 → 艳遇类型选择 -->
+                    <div style="background: white; border: 1px solid #E4E9EC; border-radius: 24px; padding: 16px 20px; margin-bottom: 12px;">
+                        <div style="font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 12px; font-weight: 400; line-height: 16px; color: #717375; margin-bottom: 8px;">Where</div>
+                        <select id="encounter-type-select" style="width: 100%; border: none; background: transparent; font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 16px; font-weight: 400; line-height: 22px; color: #0A0A0A; cursor: pointer; outline: none; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg width=\'12\' height=\'8\' viewBox=\'0 0 12 8\' fill=\'none\' xmlns=\'http://www.w3.org/2000/svg\'%3e%3cpath d=\'M1 1L6 6L11 1\' stroke=\'%230A0A0A\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0px center; padding-right: 20px;">
+                            <option value="1">电车邂逅</option>
+                            <option value="2">补习班诱惑</option>
+                            <option value="3">图书馆秘密</option>
+                            <option value="4">深夜便利店</option>
+                            <option value="5">公园野性</option>
+                            <option value="6">游戏厅邂逅</option>
+                            <option value="7">KTV激情</option>
+                            <option value="8">雨夜避雨</option>
+                        </select>
+                    </div>
+
+                    <!-- Gender卡片 → 性别选择 -->
+                    <div style="background: white; border: 1px solid #E4E9EC; border-radius: 24px; padding: 16px 20px; margin-bottom: 12px;">
+                        <div style="font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 12px; font-weight: 400; line-height: 16px; color: #717375; margin-bottom: 8px;">Gender</div>
+                        <select id="target-gender-select" style="width: 100%; border: none; background: transparent; font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 16px; font-weight: 400; line-height: 22px; color: #0A0A0A; cursor: pointer; outline: none; appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg width=\'12\' height=\'8\' viewBox=\'0 0 12 8\' fill=\'none\' xmlns=\'http://www.w3.org/2000/svg\'%3e%3cpath d=\'M1 1L6 6L11 1\' stroke=\'%230A0A0A\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3e%3c/svg%3e'); background-repeat: no-repeat; background-position: right 0px center; padding-right: 20px;">
+                            <option value="female">女性</option>
+                            <option value="male">男性</option>
+                        </select>
+                    </div>
+
+                    <!-- Who's coming卡片 -->
+                    <div style="background: white; border: 1px solid #E4E9EC; border-radius: 24px; padding: 20px; flex: 1; display: flex; flex-direction: column;">
+                        <h2 style="font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 22px; font-weight: 500; line-height: 28px; color: #0A0A0A; margin: 0 0 16px 0;">Who's coming?</h2>
+                        
+                        <!-- Adults -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 0.5px solid #E4E9EC;">
+                            <div>
+                                <div style="font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 16px; font-weight: 400; line-height: 22px; color: #0A0A0A;">Adults</div>
+                                <div style="font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 12px; font-weight: 400; line-height: 16px; color: #717375; margin-top: 4px;">Ages 13 or above</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <button style="background: white; border: 1px solid #E4E9EC; border-radius: 24px; padding: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 8H4" stroke="#BABEC1" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </button>
+                                <span style="font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 16px; font-weight: 500; line-height: 22px; color: #0A0A0A; min-width: 20px; text-align: center;">0</span>
+                                <button style="background: white; border: 1px solid #BABEC1; border-radius: 24px; padding: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 4V12M4 8H12" stroke="#0A0A0A" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Children -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 0.5px solid #E4E9EC;">
+                            <div>
+                                <div style="font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 16px; font-weight: 400; line-height: 22px; color: #0A0A0A;">Children</div>
+                                <div style="font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 12px; font-weight: 400; line-height: 16px; color: #717375; margin-top: 4px;">Ages 2-12</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <button style="background: white; border: 1px solid #E4E9EC; border-radius: 24px; padding: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 8H4" stroke="#BABEC1" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </button>
+                                <span style="font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 16px; font-weight: 500; line-height: 22px; color: #0A0A0A; min-width: 20px; text-align: center;">0</span>
+                                <button style="background: white; border: 1px solid #BABEC1; border-radius: 24px; padding: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 4V12M4 8H12" stroke="#0A0A0A" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Infants -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 0.5px solid #E4E9EC;">
+                            <div>
+                                <div style="font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 16px; font-weight: 400; line-height: 22px; color: #0A0A0A;">Infants</div>
+                                <div style="font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 12px; font-weight: 400; line-height: 16px; color: #717375; margin-top: 4px;">Under 2</div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <button style="background: white; border: 1px solid #E4E9EC; border-radius: 24px; padding: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 8H4" stroke="#BABEC1" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </button>
+                                <span style="font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 16px; font-weight: 500; line-height: 22px; color: #0A0A0A; min-width: 20px; text-align: center;">0</span>
+                                <button style="background: white; border: 1px solid #BABEC1; border-radius: 24px; padding: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 4V12M4 8H12" stroke="#0A0A0A" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Pets -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0;">
+                            <div>
+                                <div style="font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 16px; font-weight: 400; line-height: 22px; color: #0A0A0A;">Pets</div>
+                                <div style="border-bottom: 1px solid #717375; display: inline-block; margin-top: 4px;">
+                                    <span style="font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 12px; font-weight: 500; line-height: 16px; color: #717375;">Bringing a service animal?</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <button style="background: white; border: 1px solid #E4E9EC; border-radius: 24px; padding: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 8H4" stroke="#BABEC1" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </button>
+                                <span style="font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 16px; font-weight: 500; line-height: 22px; color: #0A0A0A; min-width: 20px; text-align: center;">0</span>
+                                <button style="background: white; border: 1px solid #BABEC1; border-radius: 24px; padding: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 4V12M4 8H12" stroke="#0A0A0A" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 底部按钮栏 -->
+                <div style="background: white; padding: 16px 24px 24px; border-top: 1px solid #E4E9EC; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
+                    <button style="font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 16px; font-weight: 500; line-height: 22px; color: #0A0A0A; background: transparent; border: none; text-decoration: underline; cursor: pointer;">Clear all</button>
+                    <button id="encounter-search-btn" onclick="generateEncounter()" style="background: #D42F4D; color: white; border: none; border-radius: 8px; padding: 14px 24px; font-family: 'Airbnb Cereal App', -apple-system, sans-serif; font-size: 16px; font-weight: 500; line-height: 22px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s;">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M14 14L10 10M11.3333 6.66667C11.3333 9.244 9.244 11.3333 6.66667 11.3333C4.08934 11.3333 2 9.244 2 6.66667C2 4.08934 4.08934 2 6.66667 2C9.244 2 11.3333 4.08934 11.3333 6.66667Z" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                        <span id="encounter-search-text">Search</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="home-indicator" onclick="goHome()"></div>
+        
+        <!-- 手机壳覆盖层 - 真实PNG图片作为边框和灵动岛 -->
+        <div class="phone-overlay"></div>
+    </div>
+
+    <script>
+        // === 核心系统功能 ===
+        
+        // === 壁纸功能 ===
+        function changeWallpaper(input) {
+            if(input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const bgData = e.target.result;
+                    applyWallpaper(bgData);
+                    localStorage.setItem('phone_wallpaper', bgData);
+                    // Update preview
+                    document.getElementById('current-bg-preview').style.backgroundImage = `url('${bgData}')`;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function applyWallpaper(url) {
+            const home = document.getElementById('home-screen');
+            if(url) {
+                home.style.backgroundImage = `url('${url}')`;
+                home.style.backgroundSize = 'cover';
+                home.style.backgroundPosition = 'center';
+                home.style.backgroundRepeat = 'no-repeat';
+            } else {
+                // Default - 恢复默认壁纸
+                home.style.backgroundImage = "url('https://c4.wallpaperflare.com/wallpaper/297/22/531/anime-scenery-landscape-sky-clouds-wallpaper-preview.jpg')";
+                home.style.backgroundSize = 'cover';
+                home.style.backgroundPosition = 'center';
+                home.style.backgroundRepeat = 'no-repeat';
+            }
+        }
+
+        function resetWallpaper() {
+            localStorage.removeItem('phone_wallpaper');
+            applyWallpaper(null);
+            document.getElementById('current-bg-preview').style.backgroundImage = '';
+        }
+
+        // Load wallpaper on start
+        const savedBg = localStorage.getItem('phone_wallpaper');
+        if(savedBg) {
+            applyWallpaper(savedBg);
+            setTimeout(() => {
+                const preview = document.getElementById('current-bg-preview');
+                if(preview) preview.style.backgroundImage = `url('${savedBg}')`;
+            }, 100);
+        }
+
+        // === 基础系统逻辑 ===
+        function updateClock() { 
+            document.getElementById('clock').innerText = new Date().toTimeString().slice(0,5); 
+        }
+        setInterval(updateClock, 1000); 
+        updateClock();
+
+        function openApp(id) {
+            document.getElementById(id+'-app').classList.add('active');
+            const sb = document.getElementById('status-bar');
+            
+            // 隐藏dock
+            const dock = document.querySelector('.dock');
+            if (dock) {
+                dock.classList.add('hidden');
+            }
+            
+            // 根据不同应用调整状态栏颜色
+            switch(id) {
+                case 'settings':
+                case 'airbnb':
+                    sb.classList.add('dark');
+                    break;
+                default:
+                    sb.classList.add('light');
+            }
+        }
+
+        function goHome() {
+            document.querySelectorAll('.app-view').forEach(e => e.classList.remove('active'));
+            const sb = document.getElementById('status-bar');
+            sb.classList.remove('dark'); 
+            sb.classList.add('light');
+            
+            // 显示dock
+            const dock = document.querySelector('.dock');
+            if (dock) {
+                dock.classList.remove('hidden');
+            }
+        }
+
+        // === 艳遇生成器功能 ===
+        async function generateEncounter() {
+            const encounterType = document.getElementById('encounter-type-select').value;
+            const targetGender = document.getElementById('target-gender-select').value;
+            const searchBtn = document.getElementById('encounter-search-btn');
+            const searchText = document.getElementById('encounter-search-text');
+            
+            console.log('[艳遇生成] 开始生成...', { encounterType, targetGender });
+            
+            // 禁用按钮并显示加载状态
+            searchBtn.disabled = true;
+            searchBtn.style.opacity = '0.6';
+            searchBtn.style.cursor = 'not-allowed';
+            const originalText = searchText.textContent;
+            searchText.textContent = 'Generating...';
+            
+            try {
+                // 保存参数到localStorage（供艳遇生成循环任务脚本读取）
+                if (window.parent && window.parent.localStorage) {
+                    // 如果在iframe中，保存到父窗口的localStorage
+                    window.parent.localStorage.setItem('encounter_type_choice', encounterType);
+                    window.parent.localStorage.setItem('encounter_gender_choice', targetGender);
+                    console.log('[艳遇生成] 参数已保存到父窗口localStorage');
+                } else {
+                    // 否则保存到当前窗口的localStorage
+                    localStorage.setItem('encounter_type_choice', encounterType);
+                    localStorage.setItem('encounter_gender_choice', targetGender);
+                    console.log('[艳遇生成] 参数已保存到localStorage');
+                }
+                
+                // 尝试多种方法调用/xbqte命令
+                let scriptTriggered = false;
+                
+                // 方法1：尝试调用父窗口的window.xbqte（如果在iframe中）
+                if (!scriptTriggered && window.parent && window.parent.xbqte) {
+                    try {
+                        console.log('[艳遇生成] 尝试通过父窗口的xbqte调用...');
+                        await window.parent.xbqte('艳遇生成循环任务');
+                        scriptTriggered = true;
+                        console.log('[艳遇生成] 父窗口xbqte调用成功');
+                    } catch (e) {
+                        console.error('[艳遇生成] 父窗口xbqte调用失败:', e);
+                    }
+                }
+                
+                // 方法2：尝试调用父窗口的STscript
+                if (!scriptTriggered && window.parent && window.parent.STscript) {
+                    try {
+                        console.log('[艳遇生成] 尝试通过父窗口的STscript调用...');
+                        await window.parent.STscript('/xbqte 艳遇生成循环任务');
+                        scriptTriggered = true;
+                        console.log('[艳遇生成] 父窗口STscript调用成功');
+                    } catch (e) {
+                        console.error('[艳遇生成] 父窗口STscript调用失败:', e);
+                    }
+                }
+                
+                // 方法3：尝试使用postMessage通知父窗口
+                if (!scriptTriggered) {
+                    try {
+                        console.log('[艳遇生成] 尝试通过postMessage通知父窗口...');
+                        window.parent.postMessage({
+                            action: 'runEncounter',
+                            params: {
+                                type: encounterType,
+                                gender: targetGender
+                            }
+                        }, '*');
+                        scriptTriggered = true;
+                        console.log('[艳遇生成] postMessage已发送');
+                    } catch (e) {
+                        console.error('[艳遇生成] postMessage发送失败:', e);
+                    }
+                }
+                
+                // 方法4：尝试直接调用（如果不在iframe中）
+                if (!scriptTriggered && typeof window.xbqte !== 'undefined') {
+                    try {
+                        console.log('[艳遇生成] 尝试直接调用xbqte...');
+                        await window.xbqte('艳遇生成循环任务');
+                        scriptTriggered = true;
+                        console.log('[艳遇生成] xbqte直接调用成功');
+                    } catch (e) {
+                        console.error('[艳遇生成] xbqte直接调用失败:', e);
+                    }
+                }
+                
+                // 方法5：尝试直接调用STscript
+                if (!scriptTriggered && typeof STscript !== 'undefined') {
+                    try {
+                        console.log('[艳遇生成] 尝试直接调用STscript...');
+                        await STscript('/xbqte 艳遇生成循环任务');
+                        scriptTriggered = true;
+                        console.log('[艳遇生成] STscript直接调用成功');
+                    } catch (e) {
+                        console.error('[艳遇生成] STscript直接调用失败:', e);
+                    }
+                }
+                
+                // 显示成功反馈
+                if (scriptTriggered) {
+                    searchText.textContent = '✓ Generated!';
+                    setTimeout(() => {
+                        searchBtn.disabled = false;
+                        searchBtn.style.opacity = '1';
+                        searchBtn.style.cursor = 'pointer';
+                        searchText.textContent = originalText;
+                    }, 2000);
+                } else {
+                    // 如果所有方法都失败，提示用户手动执行
+                    console.warn('[艳遇生成] 所有调用方法均失败，请手动执行');
+                    searchText.textContent = '请手动执行';
+                    setTimeout(() => {
+                        searchBtn.disabled = false;
+                        searchBtn.style.opacity = '1';
+                        searchBtn.style.cursor = 'pointer';
+                        searchText.textContent = originalText;
+                        alert('请在聊天框中手动输入：/xbqte 艳遇生成循环任务');
+                    }, 1500);
+                }
+                
+            } catch (error) {
+                console.error('[艳遇生成] 生成失败:', error);
+                searchText.textContent = '✗ Failed';
+                setTimeout(() => {
+                    searchBtn.disabled = false;
+                    searchBtn.style.opacity = '1';
+                    searchBtn.style.cursor = 'pointer';
+                    searchText.textContent = originalText;
+                }, 2000);
+            }
+        }
+    </script>
+</body>
+</html>
