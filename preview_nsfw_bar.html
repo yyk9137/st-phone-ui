@@ -2215,8 +2215,6 @@
 <body>
 
   <div class="mes_text">
-    <p style="color:#aaa; line-height:1.6; margin-bottom:10px;">(正文预览) 她面色潮红，身体微微颤抖...</p>
-
     <!-- NSFW Widget Start -->
     <div class="wzx-nsfw-bar" id="nsfwWidget">
 
@@ -2674,7 +2672,7 @@
       }
       
       try {
-        await STscript(`/send "${escapedMessage}"`);
+        await STscript(`/send <Request: ${escapedMessage}>`);
         await STscript('/trigger');
         console.log('[发送] 已发送消息并触发AI回复:', message);
         
@@ -4621,7 +4619,7 @@
       // Send to SillyTavern and trigger AI reply
       if (typeof STscript === 'function') {
         try {
-          await STscript(`/send "${message}"`);
+          await STscript(`/send <Request: ${message}>`);
           await STscript('/trigger');
           console.log('[命运骰子] 已发送命运卡牌指令并触发AI回复');
         } catch (e) {
